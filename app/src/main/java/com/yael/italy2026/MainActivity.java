@@ -1,6 +1,7 @@
 package com.yael.italy2026;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -60,18 +61,43 @@ public class MainActivity extends Activity {
         return true;
     }
 
-    /** Sends the place's address to Waze as a search, the same as pasting it into Waze, and starts navigation. */
+    private static final String[] WAZE_OPTIONS = {
+        "1. Search the address in Waze",
+        "2. Navigate to the map pin",
+        "3. Open the pin as a location",
+        "4. Share the address to Waze"
+    };
+
+    /** Test version: lets you pick how to hand the place to Waze, to find the way that works on this phone. */
     private void navigateWithWaze(String url) {
-        String address = Uri.parse(url.replaceFirst("^waze:/*", "waze://x/")).getQueryParameter("q");
-        if (address == null || address.isEmpty()) { Toast.makeText(this, "No address for this place", Toast.LENGTH_SHORT).show(); return; }
-        String link = "https://waze.com/ul?q=" + Uri.encode(address) + "&navigate=yes";
-        Intent waze = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
-        waze.setPackage("com.waze");
-        waze.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Uri u = Uri.parse(url.replaceFirst("^waze:/*", "waze://x/"));
+        final String q = u.getQueryParameter("q");
+        final String ll = u.getQueryParameter("ll");
+        new AlertDialog.Builder(this)
+            .setTitle(q)
+            .setItems(WAZE_OPTIONS, (dialog, which) -> launchWaze(which, q, ll))
+            .show();
+    }
+
+    private void launchWaze(int which, String q, String ll) {
+        Intent i;
+        if (which == 0) {
+            i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://waze.com/ul?q=" + Uri.encode(q)));
+        } else if (which == 1) {
+            i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://waze.com/ul?ll=" + ll + "&navigate=yes"));
+        } else if (which == 2) {
+            i = new Intent(Intent.ACTION_VIEW, Uri.parse("geo:" + ll + "?q=" + Uri.encode(ll + "(" + q + ")")));
+        } else {
+            i = new Intent(Intent.ACTION_SEND);
+            i.setType("text/plain");
+            i.putExtra(Intent.EXTRA_TEXT, q);
+        }
+        i.setPackage("com.waze");
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
-            startActivity(waze);
+            startActivity(i);
         } catch (ActivityNotFoundException e) {
-            open(link); // Waze not installed: the web page offers to install it
+            Toast.makeText(this, "Waze can't open option " + (which + 1), Toast.LENGTH_LONG).show();
         }
     }
 

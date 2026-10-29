@@ -6,8 +6,19 @@ android {
         applicationId 'com.yael.italy2026'
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName '1.0'
+        versionCode 2
+        versionName '1.1'
+    }
+    signingConfigs {
+        trip {
+            storeFile file('italy2026.keystore')
+            storePassword 'italy2026'
+            keyAlias 'italy2026'
+            keyPassword 'italy2026'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.trip }
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }

@@ -15,8 +15,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /** Shows the trip list (assets/index.html) and handles the Waze and Copy buttons. */
 public class MainActivity extends Activity {
@@ -62,11 +60,11 @@ public class MainActivity extends Activity {
         return true;
     }
 
-    /** Reads the pin from the link and asks Waze to drive there, using Waze's documented link format. */
+    /** Sends the place's address to Waze as a search, the same as pasting it into Waze, and starts navigation. */
     private void navigateWithWaze(String url) {
-        Matcher m = LATLON.matcher(Uri.decode(url));
-        if (!m.find()) { Toast.makeText(this, "No location for this place", Toast.LENGTH_SHORT).show(); return; }
-        String link = "https://waze.com/ul?ll=" + m.group(1) + "," + m.group(2) + "&navigate=yes&zoom=17";
+        String address = Uri.parse(url.replaceFirst("^waze:/*", "waze://x/")).getQueryParameter("q");
+        if (address == null || address.isEmpty()) { Toast.makeText(this, "No address for this place", Toast.LENGTH_SHORT).show(); return; }
+        String link = "https://waze.com/ul?q=" + Uri.encode(address) + "&navigate=yes";
         Intent waze = new Intent(Intent.ACTION_VIEW, Uri.parse(link));
         waze.setPackage("com.waze");
         waze.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -76,8 +74,6 @@ public class MainActivity extends Activity {
             open(link); // Waze not installed: the web page offers to install it
         }
     }
-
-    private static final Pattern LATLON = Pattern.compile("ll=(-?\\d+(?:\\.\\d+)?),(-?\\d+(?:\\.\\d+)?)");
 
     private void open(String url) {
         try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); }
